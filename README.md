@@ -17,18 +17,19 @@ http://localhost:8080/PetAppClient.jnlp
 3. Run JNLP, login as `admin / password123`
 
 ## Features
-- ✅ Login and authentication
-- ✅ Edit pet/owner/vaccine details
-- ✅ UI validation (length, phone, dates)
-- ✅ Timer-based vaccine expiry alerts
-- ✅ JMS notifications logged to `server.log`
-- ✅ H2 + Flyway-powered schema
+-  Login and authentication
+-  Edit pet/owner/vaccine details
+-  UI validation (length, phone, dates)
+-  Timer-based vaccine expiry alerts
+-  JMS notifications logged to `server.log`
+-  H2 + Flyway-powered schema
 
 ## Flyway Scripts
 - `V1__schema.sql`: Creates pet, owner, vaccine, login tables
 - `V2__data.sql`: Inserts sample data
-
+######################
 Pet.java – petapp-ejb/src/main/java/com/petapp/model/Pet.java
+######################
 package com.petapp.model;
 
 import javax.persistence.*;
@@ -55,9 +56,9 @@ public class Pet {
 
     // Getters & Setters
 }
-
-
+####################
 Owner.java – petapp-ejb/src/main/java/com/petapp/model/Owner.java
+####################
 package com.petapp.model;
 
 import javax.persistence.*;
@@ -78,8 +79,9 @@ public class Owner {
 
     // Getters & Setters
 }
-
+##################
 Vaccine.java – petapp-ejb/src/main/java/com/petapp/model/Vaccine.java
+##################
 package com.petapp.model;
 
 import javax.persistence.*;
@@ -97,8 +99,9 @@ public class Vaccine {
 
     // Getters & Setters
 }
-
+#####################
 UserLogin.java – petapp-ejb/src/main/java/com/petapp/model/UserLogin.java
+#####################
 package com.petapp.model;
 
 import javax.persistence.Entity;
@@ -113,9 +116,9 @@ public class UserLogin {
 
     // Getters & Setters
 }
-
-
+######################
 V1__schema.sql – petapp-ejb/src/main/resources/db/migration/V1__schema.sql
+######################
 CREATE TABLE owner (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255),
@@ -142,9 +145,9 @@ CREATE TABLE user_login (
   username VARCHAR(100) PRIMARY KEY,
   password VARCHAR(100)
 );
-
-
+####################
 V2__data.sql – petapp-ejb/src/main/resources/db/migration/V2__data.sql
+###################
 INSERT INTO owner (name, phone) VALUES ('Sita Rao', '555-1234');
 
 INSERT INTO pet (name, age, last_vaccination, owner_id)
@@ -154,9 +157,9 @@ INSERT INTO vaccine (type, pet_id) VALUES ('Rabies', 1);
 INSERT INTO vaccine (type, pet_id) VALUES ('Distemper', 1);
 
 INSERT INTO user_login (username, password) VALUES ('admin', 'password123');
-
-
+###################
 PetServiceBean.java – petapp-ejb/src/main/java/com/petapp/ejb/PetServiceBean.java
+###################
 package com.petapp.ejb;
 
 import com.petapp.model.Pet;
@@ -196,8 +199,9 @@ public class PetServiceBean {
                  .getResultList();
     }
 }
-
+########################
 VaccinationScheduler.java – petapp-ejb/src/main/java/com/petapp/ejb/VaccinationScheduler.java
+########################
 package com.petapp.ejb;
 
 import com.petapp.model.Pet;
@@ -230,8 +234,9 @@ public class VaccinationScheduler {
         }
     }
 }
-
+#######################
 VaccinationScheduler.java – petapp-ejb/src/main/java/com/petapp/ejb/VaccinationScheduler.java
+#######################
 package com.petapp.ejb;
 
 import com.petapp.model.Pet;
@@ -264,8 +269,9 @@ public class VaccinationScheduler {
         }
     }
 }
-
+##################
 JMSConsumer.java – petapp-ejb/src/main/java/com/petapp/ejb/JMSConsumer.java
+##################
 package com.petapp.ejb;
 
 import javax.ejb.ActivationConfigProperty;
@@ -291,16 +297,17 @@ public class JMSConsumer implements javax.jms.MessageListener {
         }
     }
 }
-
+#################
 petapp-ejb/src/main/resources/application.properties:
+#################
 spring.datasource.url=jdbc:h2:mem:petdb;DB_CLOSE_DELAY=-1
 spring.datasource.username=sa
 spring.datasource.password=
 spring.jpa.hibernate.ddl-auto=none
 spring.flyway.locations=classpath:db/migration
-
-
+################
 LoginFrame.java
+################
 package com.petapp.client;
 
 import com.petapp.ejb.PetServiceBean;
@@ -343,8 +350,10 @@ public class LoginFrame extends JFrame {
         pack(); setLocationRelativeTo(null); setDefaultCloseOperation(EXIT_ON_CLOSE);
     }
 }
-
+#################
+JNLP Launcher
 wildfly/standalone/welcome-content/PetAppClient.jnlp
+#################
 <?xml version="1.0" encoding="UTF-8"?>
 <jnlp spec="1.0+" codebase="http://localhost:8080/" href="PetAppClient.jnlp">
   <information>
@@ -361,4 +370,77 @@ wildfly/standalone/welcome-content/PetAppClient.jnlp
   </resources>
   <application-desc main-class="com.petapp.client.LoginFrame"/>
 </jnlp>
+#####################
+DashboardFrame.java – petapp-client/src/main/java/com/petapp/client/DashboardFrame.java
+#####################      
+package com.petapp.client;
 
+import com.petapp.ejb.PetServiceBean;
+import com.petapp.model.Pet;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.util.List;
+
+public class DashboardFrame extends JFrame {
+    private PetServiceBean service;
+    private JTable petTable;
+    private JTextField searchField;
+
+    public DashboardFrame(PetServiceBean service) {
+        this.service = service;
+        setTitle("Pet Dashboard");
+        setSize(600, 400);
+
+        searchField = new JTextField(20);
+        JButton searchBtn = new JButton("Search");
+        searchBtn.addActionListener(e -> refreshTable(searchField.getText()));
+
+        JButton editBtn = new JButton("Edit Selected");
+        editBtn.addActionListener(e -> {
+            int row = petTable.getSelectedRow();
+            if (row >= 0) {
+                Long petId = Long.parseLong(petTable.getValueAt(row, 0).toString());
+                Pet pet = service.getAllPets().stream()
+                        .filter(p -> p.getId().equals(petId))
+                        .findFirst().orElse(null);
+                if (pet != null) new EditPetDialog(this, service, pet).setVisible(true);
+            }
+        });
+
+        petTable = new JTable();
+        JScrollPane scrollPane = new JScrollPane(petTable);
+
+        JPanel topPanel = new JPanel();
+        topPanel.add(new JLabel("Search:"));
+        topPanel.add(searchField);
+        topPanel.add(searchBtn);
+        topPanel.add(editBtn);
+
+        add(topPanel, BorderLayout.NORTH);
+        add(scrollPane, BorderLayout.CENTER);
+
+        refreshTable(""); // initial load
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+    }
+
+    public void refreshTable(String keyword) {
+        List<Pet> pets = keyword.isEmpty() ? service.getAllPets() : service.searchPets(keyword);
+        String[] cols = {"ID", "Name", "Age", "Last Vaccination", "Owner Name", "Owner Phone"};
+        DefaultTableModel model = new DefaultTableModel(cols, 0);
+        for (Pet pet : pets) {
+            model.addRow(new Object[]{
+                pet.getId(),
+                pet.getName(),
+                pet.getAge(),
+                pet.getLastVaccination(),
+                pet.getOwner().getName(),
+                pet.getOwner().getPhone()
+            });
+        }
+        petTable.setModel(model);
+    }
+}
+###################
